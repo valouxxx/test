@@ -11,7 +11,7 @@
 	
 	//define ('ACCESS_TOKEN', '520862471385905|xwcB-xCKmHlKwPJNLlaG2UpaYF8');
 	//define('FB_PAGE_TEST', '151166774921647'); // id madame moustache
-	define('FB_PAGE_TEST', 'dillens'); // id madame moustache
+	define('FB_PAGE_TEST', 'clublavilainebxl'); // id madame moustache
 	define('FB_API', 'https://graph.facebook.com/v2.2/');
 
 ?>

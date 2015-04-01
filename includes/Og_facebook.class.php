@@ -37,7 +37,7 @@
 		 */
 		function __construct(){
 			
-			$this->is_app_credential_exist();
+			//$this->is_app_credential_exist();
 			$this->set_credentials();
 			$this->fb_session();
 			
@@ -51,7 +51,7 @@
 		public function fb_session(){
 			// APP SESSION & ACCESS TOKEN (without user connect)	
 			$session = new FacebookSession($this->app_id.'|'.$this->app_secret);
-			
+			$_SESSION['access_token'] = $this->app_id.'|'.$this->app_secret;
 			/**	 USER CONNECT VERSION
 			 * @todo : ALL !!!
 			$helper = new FacebookRedirectLoginHelper( 'http://events-wp.valentinrocher.com/', $this->app_ID, $this->app_secret);
@@ -85,7 +85,7 @@
 		}
 		
 		public function set_credentials(){
-			// Check Plugin Officel facebook
+			// Check Plugin Official facebook
 			$credentials = get_option('facebook_application');
 			if(is_array($credentials) && !empty($credentials)){
 				if(!empty($credentials['app_id']) && !empty($credentials['app_secret']) && !empty($credentials['access_token'])){
@@ -100,11 +100,13 @@
 				}
 			}//*/
 			
-			
+			/**
+			 * @todo : check credentials
+			 */
 			$credentials = get_option('ogfe_facebook_credential');
 				
 			
-			print_r($credentials);
+			//print_r($_SESSION['access_token']);
 		}
 		
 		/**
@@ -117,7 +119,7 @@
 		 */
 		public function get_events($page_id = FB_PAGE_TEST){
 			$events = $this->fb_request($page_id, 'events');
-			
+			//print_r($events);
 			if(is_array($events->data)){
 				$list_events = array();
 				foreach($events->data as $event){

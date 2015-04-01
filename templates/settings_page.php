@@ -70,9 +70,31 @@
 				<?php endforeach; ?>
 			</table>
 			
+			
+			
+			
 			<!-- SUBMIT -->
 			<p class="submit">
 				<input type="submit" class="button-primary" value="<?php _e( 'Save Changes', 'ogfe-plugin' ); ?>" />
 			</p>
 		</form>
+		
+		
+		
+		
 	</div>
+	<div class="warp">
+		<?php 
+		$post_types = get_post_types(array('public' => true));
+		if(is_array($post_types)){
+			foreach($post_types as $post_type){
+				if($post_type == 'attachment' || $post_type =='media')
+					continue;
+				echo '<br>';	
+				print_r($post_type);
+			}
+		}
+		
+		?>
+	</div>
+	

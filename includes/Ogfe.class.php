@@ -253,8 +253,9 @@
 		 */
 		public function is_event_exist($event){
 			global $wpdb;
-			$is_exist = $wpdb->get_results('SELECT ID, post_title FROM '.$wpdb->posts.' WHERE post_title="'.$event->name.'"');
-			if(!empty($is_exist[0])) return $is_exist[0]->ID;
+			$is_exist = $wpdb->get_results('SELECT post_id, meta_value FROM '.$wpdb->postmeta.' WHERE meta_key="event_fb_id" AND meta_value="'.$event->id.'"'); 
+			//$is_exist = $wpdb->get_results('SELECT ID, post_title FROM '.$wpdb->posts.' WHERE post_title="'.$event->name.'"');
+			if(!empty($is_exist[0])) return $is_exist[0]->post_id;
 			else return false;
 		}
 		
@@ -276,7 +277,7 @@
 		 * @todo : stock fb_id en post_meta pour faire la comparaison si exit
 		 */
 		public function create_post_event($event, $post_type=null){
-			//print_r($event);
+		//	print_r($event);
 			//return;
 			
 			$post = array(
@@ -293,13 +294,18 @@
 			
 			$post_id = $this->is_event_exist($event);
 			
+			// update
 			if(!empty($post_id)){
 				$post['ID'] = $post_id;
 				$post['edit_date'] = true;
 				echo '<br><br>'.$event->name.' allreday exist '.$post_id;
 				wp_update_post($post, true);
+				update_post_meta($post_id, 'event_fb_id', $event->id);
+			// add
 			}else{
+				echo '<br>ADD : ';
 				$post_id = wp_insert_post($post, true);
+				add_post_meta($post_id, 'event_fb_id', $event->id, true);
 			}
 			
 			echo '<br>';

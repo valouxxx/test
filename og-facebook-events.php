@@ -24,14 +24,13 @@
 	 * INCLUDES & LOADING CLASSES
 	 **/ 
 	include(__DIR__.'/config/config.php');
-	include(__DIR__.'/includes/library.php');
+	include(__DIR__.'/includes/og.library.php');
 	og_load_classes(array(
 		'Ogfe',
-		'Og_facebook',
-		'Admin_notice',
-		'Event'
+		'Og.Facebook',
+		'Og.Admin.notice',
+		'Og.Event'
 	));
-	
 	
   
 	/* 

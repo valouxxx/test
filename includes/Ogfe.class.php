@@ -8,16 +8,15 @@
 	class Ogfe {
 		
 		public
-			// plugin
 			$plugin_name		= 'og-facebook-events',
-			// Options
 			$post_type 			= 'post',
-			$post_status 		= 'draft',
+			$post_status 		= 'publish',
 			$capability 		= 'manage_options', 	// administrator only
-			$fb_events 	= '', 					// list of the event form fb request
-			$plugin_post_type 	= '', 					// if create en FB post_type
-			$FB, 										// FB class instance
-			$options;
+			$fb_events			= '', 					// list of the event form fb request
+			$plugin_post_type	= '', 					// if create en FB post_type
+			$FB 				= '',					// FB class instance
+			$options			= ''
+		;
 		
 		/**
 		 * FUNCTION __CONSTRUCT
@@ -33,7 +32,7 @@
 			//new Admin_notice('ok', 'error');
 			$this->get_ogfe_options();
 		}
-		
+		  
 		// -------------------------------------------------------------|
 		//                    PLUGIN SET-UP                             |
 		// -------------------------------------------------------------|
@@ -60,17 +59,15 @@
 		 */
 		public function add_admin_menu(){
 			add_menu_page( 
-				'Facebook Events Plugin By OPENGRAPHY', // page_title
-				'Set up Fb events', 					// menu_title
-				$this->capability, 						// capability
-				'ogfe-settings', 			// menu_slug
-				array(&$this, 'settings_page'), 		// settings page ?
-				plugins_url( '/images/icon.png', __FILE__ )
+				'Facebook Events Plugin By OPENGRAPHY', 	// page_title
+				'Set up Fb events', 						// menu_title
+				$this->capability, 							// capability
+				'ogfe-settings', 							// menu_slug
+				array(&$this, 'settings_page'), 			// settings page
+				plugins_url( '/images/icon.png', __FILE__ )	// Icon
 				 //position 
 			);
-			
 			add_submenu_page( 'ogfe-settings', 'Events List', 'Events List', $this->capability, 'event-page', array(&$this, 'events_page') );
-			//add_submenu_page( 'ogfe-settings', 'Other-settings2', 'Other-settings2', $this->capability, 'other-settings2', '' );
 		}
 		
 		
@@ -85,7 +82,7 @@
 		
 		/**
 		 * FUNCTION SAVE OPTIONS
-		 * Sets all the plugin options
+		 * Sets all the plugin options when register the plugin
 		 * @since 1.0
 		 * @param $option (array) : if empty, defaults options are used
 		 */
@@ -142,7 +139,8 @@
 							'app_id' 		=> '',
 							'app_secret'	=> '',
 							'access_token'	=> ''
-						)
+						),
+						'fb_page_ids' => '' 
 					)					
 				); //*/
 			}else{
@@ -201,7 +199,6 @@
 			if(!post_type_exists($this->plugin_post_type)){
 				register_post_type( $this->plugin_post_type, $args );
 			}else{
-				//$err = new WP_Error('post_type', 'Duplicate post_type '.$this->plugin_post_type);
 				$mess = new Admin_notice('Duplicate post_type : '.$this->plugin_post_type, 'error');
 			}
 		}
@@ -213,8 +210,9 @@
 		 * Fields set in settings_page()
 		 * @since 1.0
 		 */
-		public function ogfe_register_settings() {
-			register_setting( 'ogfe-settings-group', 'ogfe_options', array(&$this, 'ogfe_sanitize_options' ));
+		public function ogfe_register_settings() { 
+			register_setting( 'ogfe-settings-group', 'ogfe_options', array( &$this, 'ogfe_sanitize_options' ));
+			register_setting( 'ogfe-settings-group-test', 'ogfe_options_test', array( &$this, 'ogfe_sanitize_options' ));
 		}
 		
 		
@@ -224,6 +222,7 @@
 		 * @since 1.0
 		 */
 		function ogfe_sanitize_options( $options ) {
+			//print_r($options);
 			foreach($options as $option){
 				$option = (  empty($option) ) ? sanitize_text_field( $option ) : '';
 			}
@@ -235,12 +234,11 @@
 		//                    EVENTS FUNCTIONS                          |
 		// -------------------------------------------------------------|
 		
-		
 		/**
 		 * FUNCTION GET EVENTS
 		 */
-		 public function get_events(){
-		 	if(empty($this->fb_events)) $this->fb_events = $this->FB->get_events();
+		 public function get_events($fb_page_ids){
+		 	if(empty($this->fb_events)) $this->fb_events = $this->FB->get_events($fb_page_ids);
 			return $this->fb_events;
 		 }
 		
@@ -277,8 +275,6 @@
 		 * @todo : stock fb_id en post_meta pour faire la comparaison si exit
 		 */
 		public function create_post_event($event, $post_type=null){
-		//	print_r($event);
-			//return;
 			
 			$post = array(
 				"post_title" 	=> $event->name,
@@ -286,11 +282,9 @@
 				"post_date" 	=> $event->start_time,
 				"post_modified" => $event->start_time,
 				"post_content"	=> $event->description,
-				"post_status"	=> 'publish',//$this->post_status,
+				"post_status"	=> $this->post_status,
 				"post_type"		=> $this->post_type
 			);
-			
-			
 			
 			$post_id = $this->is_event_exist($event);
 			
@@ -298,19 +292,18 @@
 			if(!empty($post_id)){
 				$post['ID'] = $post_id;
 				$post['edit_date'] = true;
-				echo '<br><br>'.$event->name.' allreday exist '.$post_id;
+				//echo '<br><br>'.$event->name.' allreday exist '.$post_id;
 				wp_update_post($post, true);
 				update_post_meta($post_id, 'event_fb_id', $event->id);
 			// add
 			}else{
-				echo '<br>ADD : ';
+				//echo '<br>ADD : ';
 				$post_id = wp_insert_post($post, true);
 				add_post_meta($post_id, 'event_fb_id', $event->id, true);
 			}
-			
-			echo '<br>';
-			print_r($event->cover["source"]);
-			//$this->og_upload_and_set_images($event->cover["source"], $post_id, $post);
+			//echo '<br>';
+			//print_r($event->cover["source"]);
+			$this->og_upload_and_set_images($event->cover["source"], $post_id, $post);
 		}
 		
 		
@@ -330,25 +323,22 @@
 			global $wpdb;
 			$file_name_without_ext = $post['post_name'];
 			$file_desc = $post['post_title'];
-			
-			$fileExist = $wpdb->get_results('SELECT ID FROM ma_posts WHERE post_type="attachment" AND post_parent=0 AND post_title="'.$post['post_title'].'"');
+			$fileExist = $wpdb->get_results('SELECT ID, post_title, post_name FROM '.$wpdb->posts.' WHERE post_type="attachment" AND post_name LIKE "%'.$post['post_name'].'%"');
 			if(empty($fileExist)){
-				echo '<br>-> ADD '.$file_name_without_ext.' - '.$file_desc;
+				//echo '<br>-> ADD '.$file_name_without_ext.' - '.$file_desc;
 				add_image_size( "content_timeline", 270, 381, true );  // type2 detail page
 				add_image_size('image-thumb', 300, 230, true);
 				set_post_thumbnail_size( 132, 133, true );
 				$attach_id = $this->og_media_sideload_image($imgLink, $post_id, $file_name_without_ext, $file_desc); // Permet le transfert vers le upload wordpress - genere le attach_file dans postmeta	
-				
-				
 				if(!empty($attach_id)){
 					set_post_thumbnail($post_id, $attach_id);	
 					return $attach_id;
 				}else{
-					echo 'PROBLEME UPLOAD';
+					//echo 'PROBLEME UPLOAD';
 				}
 			}else{
+				//echo '<br>-> Allready uploaded';
 				return $fileExist[0]->ID;
-				echo '<br>-> Allready uploaded';
 			}
 		}
 			
@@ -416,11 +406,11 @@
 		 * @since 1.0
 		 */
 		public function events_page(){
-			$events = $this->get_events();
-			if(!is_array($events)){
+			$pages_events = $this->get_events($this->options['fb']['fb_page_ids']);
+			if(!is_array($pages_events)){
 				$err = new Admin_notice('No events found', 'error');
 			}
-			$this->create_post_events($events);
+			//$this->create_post_events($events);
 			include plugin_dir_path(__DIR__).'templates/events_page.php';
 		}
 		

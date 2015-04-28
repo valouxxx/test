@@ -12,11 +12,11 @@
 	  
 	  
 	  
-	  /**
-	   * FUNCTION OG LOAD CLASSES
-	   * 
-	   */
-	  function og_load_classes($classes){
+	/**
+	 * FUNCTION OG LOAD CLASSES
+	 * 
+	 */
+	function og_load_classes($classes){
 		foreach($classes as $classe){
 			if(!class_exists($classe)){
 				require_once( plugin_dir_path( __FILE__ ).$classe.'.class.php');
@@ -24,5 +24,6 @@
 				print_r($classe.' name allready exist');
 			}
 		}
-	  }
+	}
+	
 	

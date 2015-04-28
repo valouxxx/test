@@ -23,6 +23,7 @@
 	
 	/**
 	 * CLASS OG FACEBOOK
+	 * Class wich deals with the facebook connection et wich get the data from facebook
 	 */
 	class Og_facebook{
 		
@@ -114,23 +115,28 @@
 		 * Get event object list with an fb_id (page)
 		 * @since 1.0
 		 * @link https://developers.facebook.com/docs/graph-api/reference/v2.2/event/?locale=fr_FR
-		 * @param $page_id (string) : the id of the page to graph
-		 * @return $list_events (array) : all events object
+		 * @param $fb_page_ids (string) : the ids of the page to graph, set in ogfe_options, separate by ";"
+		 * @return $list_events (array) : all event objects
 		 */
-		public function get_events($page_id = FB_PAGE_TEST){
-			$events = $this->fb_request($page_id, 'events');
-			//print_r($events);
-			if(is_array($events->data)){
-				$list_events = array();
-				foreach($events->data as $event){
+		public function get_events($fb_page_ids){
+			
+			$fb_page_ids = str_replace(' ', '', $fb_page_ids);
+			$fb_page_ids = explode(';',$fb_page_ids);
+			
+			
+			$events = array();
+			
+			foreach($fb_page_ids as $fb_page_id){
+				$fb_page_id = explode('/',$fb_page_id);
+				$fb_page_id = array_pop($fb_page_id);
+				$events[$fb_page_id] = $this->fb_request($fb_page_id, 'events');
+				foreach($events[$fb_page_id]->data as $event){
 					$event_infos = $this->fb_request($event->id, 'event');
 					$event_infos = (array) $event_infos;
-					$list_events[]= new Event($event_infos);
+					$return[$fb_page_id][]= new Event($event_infos); 
 				}
-				return $list_events;
-			}else{
-				//$err = new Admin_notice('No Events found', 'error');
 			}
+			return $return;
 		}
 		
 		

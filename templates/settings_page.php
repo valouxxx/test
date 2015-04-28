@@ -1,3 +1,22 @@
+<?php
+	/**
+	 * @todo:
+	 * change fb app id & fb_secret. Ce sont ceux de la class qui sont appelé et non ceux des options en db
+	 */
+	//print_r($options);
+?>
+	
+	<form method="post" action="options.php">
+		<?php settings_fields( 'ogfe-settings-group-test' ); ?>
+		<input type="text" name="ogfe_options_test[text1]" />
+		<!-- SUBMIT -->
+			<p class="submit">
+				<input type="submit" class="button-primary" value="<?php _e( 'Save Changes', 'ogfe-plugin' ); ?>" />
+			</p>
+		
+	</form>
+	
+	
 	<div class="wrap"> 
 		<h2><?php _e( 'FB Events', $this->plugin_name ) ?></h2>
 		<form method="post" action="options.php">
@@ -38,7 +57,7 @@
 						<?php _e( 'APP ID', $this->plugin_name ) ?>
 					</th> 
 					<td>
-						<input type="text" name="ogfe_options[app_id]" value="<?php echo $this->FB->app_id; ?>" />
+						<input type="text" name="ogfe_options[credentials][app_id]" value="<?php echo $this->FB->app_id; ?>" />
 					</td>
 				</tr>
 				<tr valign="top"> 
@@ -46,16 +65,14 @@
 						<?php _e( 'APP SECRET', $this->plugin_name ) ?>
 					</th> 
 					<td>
-						<input type="text" name="ogfe_options[app_secret]" value="<?php echo $this->FB->app_secret; ?>" />
+						<input type="text" name="ogfe_options[credentials][app_secret]" value="<?php echo $this->FB->app_secret; ?>" />
 					</td>
 				</tr>
 			</table>
 			
 			<!-- EVENTS EDGES -->
 			<table class="form-table">
-				<?php foreach ($this->options['fb']['event_edges'] as $name=>$edge) : 
-					
-					?>
+				<?php foreach ($this->options['fb']['event_edges'] as $name=>$edge) : ?>
 				<tr valign="top"> 
 					<th scope="row">
 						<?php _e(ucfirst($name), $this->plugin_name ) ?>
@@ -70,17 +87,26 @@
 				<?php endforeach; ?>
 			</table>
 			
-			
-			
+			<!-- FB PAGE IDS -->
+			<table class="form-table">
+				<tr valign="top">
+					<th scope="row">
+						<?php _e('FB page & profil ids', $this->plugin_name); ?>
+					</th>
+					<td>
+						<textarea name="ogfe_options[fb][fb_page_ids]"><?php echo $this->options['fb']['fb_page_ids']; ?></textarea>
+						<p class="description">
+							<?php _e('Type your facebook page/profile ids or name or url, separate with ";". Ex: "123456789; 123456789", "my_page_name; my_other_page_name", "https://www.facebook.com/my_page_name; https://www.facebook.com/my_other_page_name"', $this->plugin_name); ?>
+						</p>
+					</td>
+				</tr>
+			</table>
 			
 			<!-- SUBMIT -->
 			<p class="submit">
 				<input type="submit" class="button-primary" value="<?php _e( 'Save Changes', 'ogfe-plugin' ); ?>" />
 			</p>
 		</form>
-		
-		
-		
 		
 	</div>
 	<div class="warp">

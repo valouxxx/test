@@ -1,16 +1,5 @@
 <?php
-	function og_curl_get_file_contents($URL) {
-	    $c = curl_init();
-	    curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-	    curl_setopt($c, CURLOPT_URL, $URL);
-	    $contents = curl_exec($c);
-	    $err  = curl_getinfo($c,CURLINFO_HTTP_CODE);
-	    curl_close($c);
-	    if ($contents) return $contents;
-	    else return FALSE;
-	} //http://stackoverflow.com/questions/27056483/how-do-i-auto-post-on-fb-with-php-and-fb-sdk-4-4
-	  
-	  
+	
 	  
 	/**
 	 * FUNCTION OG LOAD CLASSES
@@ -26,4 +15,11 @@
 		}
 	}
 	
+	/**
+	 * FUNCTION OG SELECTED
+	 * Enable to print "selected" in html option > selected form
+	 */
+	 function og_selected($value, $option_value){
+		if($value == $option_value) return "selected";
+	 }
 	

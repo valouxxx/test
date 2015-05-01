@@ -2,8 +2,8 @@
 
 	
 	// APP : Og Page Events
-	define ('APP_ID', '520862471385905');
-	define ('APP_SECRET', 'c05db8e386400b673a32f2cbff7d2fe6');
+	//define ('APP_ID', '520862471385905');
+	//define ('APP_SECRET', 'c05db8e386400b673a32f2cbff7d2fe6');
 	
 	//echo __DIR__;
 	//define ('_SERVER_URL', $_SERVER['HTTP_HOST'].'/events');

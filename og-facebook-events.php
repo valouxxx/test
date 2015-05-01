@@ -28,18 +28,43 @@
 	og_load_classes(array(
 		'Ogfe',
 		'Og.Facebook',
+		'Og.Facebook.event',
 		'Og.Admin.notice',
 		'Og.Event'
 	));
 	
-  
+	
+	/**
+	 * RUN
+	 */
+  	$ogfe = new Ogfe();
+	
+	
 	/* 
 	 * PLUGIN ACTIVATION
 	 */
-	$ogfe = new Ogfe();
-	register_activation_hook( __FILE__, array($ogfe,'register' ));
+	
+	register_activation_hook( __FILE__, array($ogfe, 'activate' ));
 	
 	
+	
+	
+	/**
+	 * FUNCTION CRON
+	 */
+	add_action('trig_cron', 'cron_events');
+	
+	function cron_events(){
+		$my_post = array(
+		  'post_title'    => 'My post',
+		  'post_content'  => 'This is my post.',
+		  'post_status'   => 'publish',
+		  'post_author'   => 1,
+		);	
+		wp_insert_post($my_post);
+		//$ogfe->run_admin_functions();
+	}
+	wp_schedule_event( time(), 'hourly', 'trig_cron');
 	/**************************************************************************************************************/
 	
 	/*

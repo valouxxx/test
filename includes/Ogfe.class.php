@@ -10,27 +10,33 @@
 		public
 			$plugin_name		= 'og-facebook-events',
 			$post_type 			= 'post',
+			$post_types			= '',
 			$post_status 		= 'publish',
 			$capability 		= 'manage_options', 	// administrator only
 			$fb_events			= '', 					// list of the event form fb request
-			$plugin_post_type	= '', 					// if create en FB post_type
+			$plugin_post_type	= 'fb_events', 					// if create en FB post_type
 			$FB 				= '',					// FB class instance
+			$FB_session			= 0,
 			$options			= ''
 		;
 		
 		/**
 		 * FUNCTION __CONSTRUCT
-		 * set hooks
 		 * @since 1.0
 		 */
 		function __construct(){
-			$this->FB = new Og_facebook();
+			
 			// HOOKS
-			add_action( 'init', 		array( &$this, 'create_fb_event_post_type'));	// ADD POST TYPE EVENTS
-			add_action( 'admin_menu', 	array( &$this, 'add_admin_menu'));				// ADMIN MENU
-			add_action( 'admin_init', 	array( &$this, 'ogfe_register_settings' ));		// REGISTER SETTINGS
-			//new Admin_notice('ok', 'error');
-			$this->get_ogfe_options();
+			add_action( 'init', 					array( &$this, 'create_fb_event_post_type'));	// ADD POST TYPE EVENTS
+			add_action( 'admin_menu', 				array( &$this, 'add_admin_menu'));				// ADMIN MENU
+			add_action( 'admin_init', 				array( &$this, 'ogfe_register_settings' ));		// REGISTER SETTINGS
+			add_action( 'admin_enqueue_scripts', 	array( &$this, 'register_plugin_styles' ));		// ADD CSS
+			add_action( 'after_setup_theme', 		array( &$this, 'og_get_post_types'));			// GET POST TYPES
+			
+			
+			add_action( 'trig_cron', 'cron_events' );
+			
+			//add_action( 'after_setup_theme', array( &$this, 'create_fb_event_post_type' ));
 		}
 		  
 		// -------------------------------------------------------------|
@@ -44,12 +50,39 @@
 		 * @global $wp_version
 		 * @since 1.0
 		 */
-		public function register(){
+		public function activate(){
 			global $wp_version;
 			if ( version_compare( $wp_version, '3.5', '<' )){
 				wp_die( 'This plugin requires WordPress version 3.5 or higher.' );	
 			}
-			$this->save_options();
+			// check if existing options after the plugin had been desactivated
+			$options = get_option('ogfe_options');
+			$this->save_options($options);
+			
+			/* CRON
+			if ( !wp_next_scheduled( 'trig_cron' ) ) {
+		        wp_schedule_event(time(), 'hourly', 'trig_cron');
+		    }
+			 * */
+			
+		}
+		/* CRON
+		public function cron_action(){
+			add_action('trig_cron_event', array( &$this, 'cron_events'));
+		}
+
+		public function cron_events(){
+			$this->run_admin_functions();
+			$pages_events = $this->get_events($this->options['fb']['fb_page_ids']);
+			if(!is_array($pages_events)){
+				return;
+			}
+			$this->create_post_events($pages_events);
+		}
+		*/
+		
+		public function og_get_post_types(){
+			$this->post_types = get_post_types(array('public' => true));
 		}
 		
 		/**
@@ -60,16 +93,23 @@
 		public function add_admin_menu(){
 			add_menu_page( 
 				'Facebook Events Plugin By OPENGRAPHY', 	// page_title
-				'Set up Fb events', 						// menu_title
+				'Events Importer', 						// menu_title
 				$this->capability, 							// capability
 				'ogfe-settings', 							// menu_slug
 				array(&$this, 'settings_page'), 			// settings page
-				plugins_url( '/images/icon.png', __FILE__ )	// Icon
+				plugins_url( $this->plugin_name.'/images/logo_facebook_event_importer.png')	// Icon
 				 //position 
 			);
 			add_submenu_page( 'ogfe-settings', 'Events List', 'Events List', $this->capability, 'event-page', array(&$this, 'events_page') );
 		}
 		
+		/**
+		 * Register and enqueue style sheet.
+		 */
+		public function register_plugin_styles() {
+			wp_register_style( $this->plugin_name, plugins_url( $this->plugin_name.'/css/style.css' ) );
+			wp_enqueue_style( $this->plugin_name );
+		}
 		
 		/**
 		 * FUNCTION GET OGFE OPTION
@@ -93,8 +133,8 @@
 				$ogfe_options = array(
 					'wp' => array(
 						'post_type' 	=> $this->post_type, 		// wich post_type to use to publish event
-						'post_status' 	=> $this->post_status,		// wich post_status to use to publish event
-						'capability' 	=> $this->capability		// capability used for plugin usage
+						'post_status' 	=> $this->post_status		// wich post_status to use to publish event
+						//'capability' 	=> $this->capability		// capability used for plugin usage
 					),
 					'fb' => array(
 						'event_edges' => array(
@@ -222,12 +262,26 @@
 		 * @since 1.0
 		 */
 		function ogfe_sanitize_options( $options ) {
-			//print_r($options);
+			// delete space tab new line
+			$options['fb']['fb_page_ids'] = trim(preg_replace('/\s\s+/', ' ',$options['fb']['fb_page_ids']));
 			foreach($options as $option){
 				$option = (  empty($option) ) ? sanitize_text_field( $option ) : '';
 			}
 			return $options;
 		}
+		
+		/**
+		 * FUNCTION RUN ADMIN FUNCTION
+		 * This functions is only neede to be exectue in the wordpress backoffice
+		 */
+		public function run_admin_functions(){
+			// GET PLUGINS OPTIONS
+			$this->get_ogfe_options();
+			// FACEBOOK
+			$this->FB = new Og_facebook_event();
+			$this->FB_session = $this->FB->set_credentials($this->options['credentials']);
+		}
+		
 		
 		
 		// -------------------------------------------------------------|
@@ -262,9 +316,11 @@
 		 * FUNCTION CREATE POST EVENTS
 		 * @since 1.0
 		 */
-		public function create_post_events($events, $post_type=null){
-			foreach($events as $event){
-				$this->create_post_event($event, $post_type);
+		public function create_post_events($pages_events, $post_type=null){
+			foreach($pages_events as $page_events){
+				foreach($page_events as $event){
+					$this->create_post_event($event, $post_type);
+				}
 			}
 		}
 		
@@ -276,15 +332,20 @@
 		 */
 		public function create_post_event($event, $post_type=null){
 			
+			/** DRY RUN TO DEBUG **/
+				
+				$dry_run = true;
+			
+			/**********************/	
+				
 			$post = array(
 				"post_title" 	=> $event->name,
 				"post_name" 	=> sanitize_title($event->name),
 				"post_date" 	=> $event->start_time,
 				"post_modified" => $event->start_time,
-				"post_content"	=> $event->description,
-				"post_status"	=> $this->post_status,
-				"post_type"		=> $this->post_type
+				"post_content"	=> $event->description
 			);
+			
 			
 			$post_id = $this->is_event_exist($event);
 			
@@ -292,19 +353,34 @@
 			if(!empty($post_id)){
 				$post['ID'] = $post_id;
 				$post['edit_date'] = true;
-				//echo '<br><br>'.$event->name.' allreday exist '.$post_id;
-				wp_update_post($post, true);
-				update_post_meta($post_id, 'event_fb_id', $event->id);
+				if($dry_run){
+					echo '<br><br>'.$event->name.' allreday exist '.$post_id;
+				}else{
+					wp_update_post($post, true);
+					update_post_meta($post_id, 'event_fb_id', $event->id);
+				}
 			// add
 			}else{
-				//echo '<br>ADD : ';
-				$post_id = wp_insert_post($post, true);
-				add_post_meta($post_id, 'event_fb_id', $event->id, true);
+				$post["post_status"]	= $this->options['wp']['post_status'] 	? $this->options['wp']['post_status'] 	: $post_status;
+				$post["post_type"] 		= $this->options['wp']['post_type'] 	? $this->options['wp']['post_type'] 	: $post_type;
+				if($dry_run){
+					echo '<br>ADD : '.$event->name;
+				}else{
+					$post_id = wp_insert_post($post, true);
+					add_post_meta($post_id, 'event_fb_id', $event->id, true);
+				}
 			}
-			//echo '<br>';
-			//print_r($event->cover["source"]);
-			$this->og_upload_and_set_images($event->cover["source"], $post_id, $post);
+			// COVER
+			if($dry_run){
+				echo '<br>';
+				print_r($event->cover["source"]);
+			}else{
+				$this->og_upload_and_set_images($event->cover["source"], $post_id, $post);
+			}
 		}
+		
+		
+		
 		
 		
 		
@@ -397,6 +473,7 @@
 		 * @since 1.0
 		 */
 		public function settings_page(){
+			$this->run_admin_functions();
 			include plugin_dir_path(__DIR__).'templates/settings_page.php';
 		}
 		
@@ -406,11 +483,12 @@
 		 * @since 1.0
 		 */
 		public function events_page(){
+			$this->run_admin_functions();
 			$pages_events = $this->get_events($this->options['fb']['fb_page_ids']);
 			if(!is_array($pages_events)){
 				$err = new Admin_notice('No events found', 'error');
 			}
-			//$this->create_post_events($events);
+			//$this->create_post_events($pages_events);
 			include plugin_dir_path(__DIR__).'templates/events_page.php';
 		}
 		
